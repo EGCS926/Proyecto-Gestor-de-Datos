@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Gestor de Tareas</title>
+</head>
+<body>
+
+  <!-- Sección de inicio de sesión -->
+  <div id="loginSection">
+    <h2>Iniciar sesión</h2>
+    <label>Usuario: <input type="text" id="username"></label><br>
+    <label>Contraseña: <input type="password" id="password"></label><br>
+    <button onclick="login()">Ingresar</button>
+    <p id="loginError" style="color: red;"></p>
+  </div>
+
+  <!-- Contenido principal -->
+  <div id="mainSection" style="display: none;">
+
+    <h2>Bienvenido, <span id="displayUser"></span></h2>
+
+    <!-- Registro de tarea -->
+    <h3>Registrar nueva tarea</h3>
+    <form id="taskForm">
+      <label>Código de tarea (ID): <input type="number" id="taskId" required></label><br>
+      <label>Título: <input type="text" id="title" required></label><br>
+      <label>Descripción: <textarea id="description" required></textarea></label><br>
+      <label>Fecha de inicio: <input type="date" id="startDate" required></label><br>
+      <label>Nombre del cliente: <input type="text" id="clientName" required></label><br>
+      <label>ID del proyecto: <input type="number" id="projectId" required></label><br>
+      <label>Comentarios: <textarea id="comments"></textarea></label><br>
+      <label>Estatus: <input type="text" id="status" value="Por hacer" readonly></label><br><br>
+      <button type="submit">Agregar tarea</button>
+    </form>
+
+    <!-- Filtro -->
+    <h3>Filtrar por estatus</h3>
+    <select id="statusFilter" onchange="filtrarTareas()">
+      <option value="Todos">Todos</option>
+      <option value="Por hacer">Por hacer</option>
+      <option value="En progreso">En progreso</option>
+      <option value="Rechazado">Rechazado</option>
+      <option value="Cancelado">Cancelado</option>
+      <option value="Cerrado">Cerrado</option>
+      <option value="En pruebas de calidad">En pruebas de calidad</option>
+      <option value="En validación por el usuario">En validación por el usuario</option>
+    </select>
+
+    <!-- Tabla -->
+    <h3>Lista de tareas</h3>
+    <table border="1">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Título</th>
+          <th>Descripción</th>
+          <th>Fecha</th>
+          <th>Cliente</th>
+          <th>ID Proyecto</th>
+          <th>Comentarios</th>
+          <th>Estatus</th>
+        </tr>
+      </thead>
+      <tbody id="taskTableBody"></tbody>
+    </table>
+
+    <!-- Sección de edición -->
+    <div id="editSection" style="display:none; border: 1px solid gray; padding: 10px; margin-top: 20px;">
+      <h3>Editar tarea seleccionada</h3>
+      <p>ID: <span id="editId"></span></p>
+      <p>Título: <span id="editTitle"></span></p>
+      <label for="editStatus">Estatus:
+        <select id="editStatus">
+          <option>En progreso</option>
+          <option>Rechazado</option>
+          <option>Cancelado</option>
+          <option>Cerrado</option>
+          <option>En pruebas de calidad</option>
+          <option>En validación por el usuario</option>
+          <option>En proceso de liberación</option>
+        </select>
+      </label><br><br>
+      <label>Nuevo comentario:<br>
+        <textarea id="newComment" rows="3" cols="50"></textarea>
+      </label><br><br>
+      <button onclick="guardarCambios()">Guardar cambios</button>
+    </div>
+  </div>
+
+  <script>
+    const validUser = "Gamaliel";
+    const validPass = "9115";
+    let selectedRow = null;
+
+    function login() {
+      const user = document.getElementById("username").value;
+      const pass = document.getElementById("password").value;
+
+      if (user === validUser && pass === validPass) {
+        document.getElementById("loginSection").style.display = "none";
+        document.getElementById("mainSection").style.display = "block";
+        document.getElementById("displayUser").textContent = user;
+      } else {
+        document.getElementById("loginError").textContent = "Credenciales inválidas.";
+      }
+    }
+
+    document.getElementById("taskForm").addEventListener("submit", function(event) {
+      event.preventDefault();
+      try {
+
+        // Obtener campos
+        const id = document.getElementById("taskId").value.trim();
+        const title = document.getElementById("title").value.trim();
+        const desc = document.getElementById("description").value.trim();
+        const date = document.getElementById("startDate").value;
+        const client = document.getElementById("clientName").value.trim();
+        const project = document.getElementById("projectId").value.trim();
+        const comments = document.getElementById("comments").value.trim();
+        const status = document.getElementById("status").value;
+
+        // Validar
+        if (!id || !title || !desc || !date || !client || !project) {
+          alert("Todos los campos obligatorios deben llenarse.");
+          return;
+        }
+
+        // Insertar en tabla
+        const table = document.getElementById("taskTableBody");
+        const row = table.insertRow();
+        row.ondblclick = function () { seleccionarFila(this); };
+        row.innerHTML = `
+          <td>${id}</td>
+          <td>${title}</td>
+          <td>${desc}</td>
+          <td>${date}</td>
+          <td>${client}</td>
+          <td>${project}</td>
+          <td>${comments}</td>
+          <td>${status}</td>
+        `;
+
+        limpiarCampos(); // llama callback para limpiar
+      } catch (err) {
+        alert("Error al registrar tarea: " + err.message);
+      }
+    });
+
+    function limpiarCampos() {
+      document.getElementById("taskForm").reset();
+      document.getElementById("status").value = "Por hacer";
+    }
+
+    function seleccionarFila(row) {
+      try {
+        selectedRow = row;
+        document.getElementById("editSection").style.display = "block";
+        document.getElementById("editId").textContent = row.cells[0].textContent;
+        document.getElementById("editTitle").textContent = row.cells[1].textContent;
+        document.getElementById("editStatus").value = row.cells[7].textContent;
+        document.getElementById("newComment").value = "";
+      } catch (err) {
+        alert("Error al seleccionar tarea: " + err.message);
+      }
+    }
+
+    function guardarCambios() {
+      try {
+        if (!selectedRow) {
+          alert("No hay tarea seleccionada.");
+          return;
+        }
+
+        const nuevoEstatus = document.getElementById("editStatus").value;
+        const nuevoComentario = document.getElementById("newComment").value.trim();
+        const fecha = new Date().toLocaleString();
+
+        // Actualiza estatus
+        selectedRow.cells[7].textContent = nuevoEstatus;
+
+        // Añade comentario si no está vacío
+        if (nuevoComentario !== "") {
+          selectedRow.cells[6].textContent += `\n[${fecha}] ${nuevoComentario}`;
+        }
+
+        // Limpiar edición
+        selectedRow = null;
+        document.getElementById("editSection").style.display = "none";
+        document.getElementById("newComment").value = "";
+      } catch (err) {
+        alert("Error al guardar cambios: " + err.message);
+      }
+    }
+
+    function filtrarTareas() {
+      try {
+        const filtro = document.getElementById("statusFilter").value;
+        const filas = document.querySelectorAll("#taskTableBody tr");
+
+        filas.forEach(row => {
+          const estatus = row.cells[7].textContent;
+          row.style.display = (filtro === "Todos" || estatus === filtro) ? "" : "none";
+        });
+      } catch (err) {
+        alert("Error al aplicar filtro: " + err.message);
+      }
+    }
+  </script>
+
+</body>
+</html>
